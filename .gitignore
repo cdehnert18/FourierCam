@@ -1,0 +1,8 @@
+# Editor settings
+.vscode/settings.json
+.settings.json
+
+# Build artifacts and caches
+compile_commands.json
+.cache/
+build/
