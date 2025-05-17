@@ -1,24 +1,13 @@
 #include "Window.h"
+#include "gtkmm/enums.h"
 
 Window::Window() {
     set_title("Fourier Cam");
-    set_default_size(300, 100);
+    set_default_size(800, 500);
+    m_paned.set_orientation(Gtk::Orientation::HORIZONTAL);
 
-    vbox.set_margin(20);
-    vbox.set_spacing(10);
+    m_paned.set_start_child(m_settingsBox);
+    m_paned.set_end_child(m_videoBox);
 
-    button.set_label("Click me");
-    button.signal_clicked().connect(sigc::mem_fun(*this, &Window::on_button_clicked));
-
-    label.set_text("Hello World");
-    label.set_visible(false);
-
-    vbox.append(button);
-    vbox.append(label);
-
-    set_child(vbox);
-}
-
-void Window::on_button_clicked() {
-    label.set_visible(true);
+    set_child(m_paned);
 }
