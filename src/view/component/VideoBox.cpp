@@ -38,7 +38,6 @@ VideoBox::VideoBox() : Gtk::Paned(Gtk::Orientation::VERTICAL) {
             set_position(200); // fallback
         }
     });
-
 }
 
 void VideoBox::draw_function(const Cairo::RefPtr<Cairo::Context>& cr, int width, int height) {

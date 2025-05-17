@@ -1,6 +1,7 @@
 executable('fourierCam',
     'main.cpp',
     'controller/Controller.cpp',
+    'model/VideoHandler.cpp',
     'view/Window.cpp',
     'view/component/SettingsBox.cpp',
     'view/component/VideoBox.cpp',
