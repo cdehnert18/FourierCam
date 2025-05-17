@@ -5,9 +5,6 @@
 #include <iostream>
 
 VideoBox::VideoBox() : Gtk::Paned(Gtk::Orientation::VERTICAL) {
-    
-    //m_webcamOutput.set_content_height(200);
-    m_webcamOutput.set_content_width(400);
 
     m_webcamOutput.set_draw_func([this](const Cairo::RefPtr<Cairo::Context>& cr,
                                         int width, int height) {
@@ -29,15 +26,6 @@ VideoBox::VideoBox() : Gtk::Paned(Gtk::Orientation::VERTICAL) {
 
     set_start_child(m_webcamOutput);
     set_end_child(m_fourierOutput);
-
-    signal_realize().connect([this]() {
-        int height = get_height();
-        if (height > 0) {
-            set_position(height / 2);
-        } else {
-            set_position(200); // fallback
-        }
-    });
 }
 
 void VideoBox::draw_function(const Cairo::RefPtr<Cairo::Context>& cr, int width, int height) {
@@ -46,6 +34,12 @@ void VideoBox::draw_function(const Cairo::RefPtr<Cairo::Context>& cr, int width,
     cr->arc(width / 2.0, height / 2.0, std::min(width, height) / 2.5, 0, 2 * M_PI);
     cr->fill();
     cr->restore();
+}
+
+void VideoBox::setBoxSizes(std::tuple<int, int> dimensions) {
+    m_webcamOutput.set_content_width(std::get<0>(dimensions) / 2);
+    m_webcamOutput.set_content_height(std::get<1>(dimensions) / 2);
+    m_fourierOutput.set_size_request(std::get<0>(dimensions) / 2, std::get<1>(dimensions) / 2);
 }
 
 
@@ -65,7 +59,6 @@ void VideoBox::on_glarea_unrealize() {
 }
 
 bool VideoBox::on_glarea_render(const Glib::RefPtr<Gdk::GLContext>&) {
-    // Set a solid color (red background)
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 

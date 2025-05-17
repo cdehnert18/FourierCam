@@ -1,6 +1,7 @@
 #include "VideoHandler.h"
 
 #include <fcntl.h>
+#include <ostream>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/videodev2.h>
@@ -15,6 +16,29 @@ VideoHandler::VideoHandler() {
 std::vector<Glib::ustring> VideoHandler::get_video_sources() const {
     return m_video_sources;
 }
+
+std::tuple<int, int> VideoHandler::get_video_resolution(const Glib::ustring& device_path) const {
+    int fd = open(device_path.c_str(), O_RDONLY);
+    if (fd == -1) {
+        std::cerr << "Failed to open device: " << device_path << std::endl;
+        return std::make_tuple(0, 0);
+    }
+
+    v4l2_format fmt;
+    memset(&fmt, 0, sizeof(fmt));
+    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+    if (ioctl(fd, VIDIOC_G_FMT, &fmt) == -1) {
+        std::cerr << "Failed to get format from device: " << device_path << std::endl;
+        close(fd);
+        return std::make_tuple(0, 0);
+    }
+
+    close(fd);
+    std::cout << static_cast<int>(fmt.fmt.pix.width) << " " << static_cast<int>(fmt.fmt.pix.height) << std::endl;
+    return std::make_tuple(static_cast<int>(fmt.fmt.pix.width), static_cast<int>(fmt.fmt.pix.height));
+}
+
 
 void VideoHandler::enumerate_video_devices() {
     const char* dev_dir = "/dev";

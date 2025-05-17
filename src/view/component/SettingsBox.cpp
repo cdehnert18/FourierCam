@@ -1,4 +1,5 @@
 #include "SettingsBox.h"
+#include "glibmm/ustring.h"
 #include "gtkmm/centerbox.h"
 #include "gtkmm/enums.h"
 #include "gtkmm/label.h"
@@ -50,4 +51,12 @@ SettingsBox::SettingsBox() : Gtk::Box(Gtk::Orientation::VERTICAL) {
 void SettingsBox::set_video_sources(const std::vector<Glib::ustring>& sources) {
     m_videoSources = Gtk::StringList::create(sources);
     m_videoSourceDropBox.set_model(m_videoSources);
+}
+
+Glib::ustring SettingsBox::getSelectedVideoSource()  {
+    int selectedIndex = m_videoSourceDropBox.get_selected();
+    if (selectedIndex >= 0 && selectedIndex < static_cast<int>(m_videoSources->get_n_items())) {
+        return m_videoSources->get_string(selectedIndex); // ✔️ wird kopiert
+    }
+    return ""; // leere Zeichenkette als Fallback
 }

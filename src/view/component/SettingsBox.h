@@ -10,7 +10,9 @@ class SettingsBox : public Gtk::Box {
         SettingsBox();
 
         void set_video_sources(const std::vector<Glib::ustring>& sources);
-        
+
+        Glib::ustring getSelectedVideoSource();
+
     private:
         Gtk::DropDown m_videoSourceDropBox;
         Glib::RefPtr<Gtk::StringList> m_videoSources;

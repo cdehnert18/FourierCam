@@ -15,6 +15,7 @@ void Controller::on_app_activate() {
     m_window = std::make_unique<Window>();
     VideoHandler videoHandler;
     m_window->set_video_sources(videoHandler.get_video_sources());
+    m_window->setBoxSizes(videoHandler.get_video_resolution(m_window->getSelectedVideoSource()));
     app->add_window(*m_window);
     m_window->set_visible(true);
 }

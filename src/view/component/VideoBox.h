@@ -8,7 +8,9 @@
 class VideoBox : public Gtk::Paned {
     public:
         VideoBox();
-    
+
+        void setBoxSizes(std::tuple<int, int> dimensions);
+
     private:
         Gtk::DrawingArea m_webcamOutput;
         Gtk::GLArea m_fourierOutput;

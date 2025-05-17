@@ -14,6 +14,9 @@ public:
     Window();
 
     void set_video_sources(const std::vector<Glib::ustring>& sources);
+    void setBoxSizes(std::tuple<int, int> dimensions);
+
+    Glib::ustring getSelectedVideoSource();
 
 private:
     Gtk::Paned m_paned;

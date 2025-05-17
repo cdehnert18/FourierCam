@@ -10,6 +10,7 @@ public:
     ~VideoHandler() = default;
 
     std::vector<Glib::ustring> get_video_sources() const;
+    std::tuple<int, int> get_video_resolution(const Glib::ustring& device_path) const;
 
 private:
     std::vector<Glib::ustring> m_video_sources;
