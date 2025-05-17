@@ -46,3 +46,8 @@ SettingsBox::SettingsBox() : Gtk::Box(Gtk::Orientation::VERTICAL) {
         // TODO
     });
 }
+
+void SettingsBox::set_video_sources(const std::vector<Glib::ustring>& sources) {
+    m_videoSources = Gtk::StringList::create(sources);
+    m_videoSourceDropBox.set_model(m_videoSources);
+}

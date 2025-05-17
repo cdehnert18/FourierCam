@@ -13,6 +13,8 @@ class Window : public Gtk::Window {
 public:
     Window();
 
+    void set_video_sources(const std::vector<Glib::ustring>& sources);
+
 private:
     Gtk::Paned m_paned;
     SettingsBox m_settingsBox;
