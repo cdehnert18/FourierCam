@@ -6,6 +6,11 @@ Window::Window() {
     set_default_size(800, 500);
     m_paned.set_orientation(Gtk::Orientation::HORIZONTAL);
 
+    auto settings = Gtk::Settings::get_default();
+    if (settings) {
+        settings->property_gtk_application_prefer_dark_theme() = true;
+    }
+
     m_paned.set_start_child(m_settingsBox);
     m_paned.set_end_child(m_videoBox);
 
