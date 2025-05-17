@@ -2,8 +2,6 @@
 #include "model/VideoHandler.h"
 #include "view/Window.h"
 
-//Window m_window;
-
 int Controller::run(int argc, char* argv[]) {
     
     app = Gtk::Application::create("de.cdehnert18.fourier-cam");
