@@ -5,4 +5,7 @@ executable('fourierCam',
     'view/Window.cpp',
     'view/component/SettingsBox.cpp',
     'view/component/VideoBox.cpp',
+    'view/shader/ShaderManager.cpp',
     dependencies: [gtkmm_dep, epoxy_dep])
+
+subdir('view')

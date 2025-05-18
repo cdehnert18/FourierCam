@@ -1,25 +1,53 @@
 #ifndef VIDEO_BOX_H
 #define VIDEO_BOX_H
 
-#include "gtkmm/drawingarea.h"
 #include "gtkmm/glarea.h"
 #include "gtkmm/paned.h"
+#include "model/VideoHandler.h"
+#include <chrono>
+#include <mutex>
+#include <thread>
+#include <atomic>
+#include <glib.h>
+#include <vector>
+#include <epoxy/gl.h>
 
 class VideoBox : public Gtk::Paned {
     public:
         VideoBox();
+        ~VideoBox();
 
-        void setBoxSizes(std::tuple<int, int> dimensions);
+        void set_initial_video_size(int width, int height);
+        void start_video_stream(const Glib::ustring& device_path);
+        void stop_video_stream();
 
     private:
-        Gtk::DrawingArea m_webcamOutput;
+        Gtk::GLArea m_webcamOutput;
         Gtk::GLArea m_fourierOutput;
 
-        void draw_function(const Cairo::RefPtr<Cairo::Context>& cr, int width, int height);
+        VideoHandler m_handler;
+        std::chrono::steady_clock::time_point m_start_time;
 
-        void on_glarea_realize();
-        void on_glarea_unrealize();
-        bool on_glarea_render(const Glib::RefPtr<Gdk::GLContext>& context);
+        std::atomic<bool> m_running;
+        std::thread m_video_thread;
+        std::vector<unsigned char> m_frame_buffer;
+        std::mutex m_frame_mutex;
+
+
+        int m_initial_frame_width = 0;
+        int m_initial_frame_height = 0;
+
+        GLuint m_shader_program = 0;
+        GLuint m_vao = 0;
+        GLuint m_vbo = 0;
+        GLuint m_texture_id = 0;
+
+        void on_glarea_realize_webcam();
+        void on_glarea_realize_fourier();
+        void on_glarea_unrealize_webcam();
+        void on_glarea_unrealize_fourier();
+        bool on_glarea_render_fourier(const Glib::RefPtr<Gdk::GLContext>& context);
+        bool on_glarea_render_webcam(const Glib::RefPtr<Gdk::GLContext>& context);
 };
 
 

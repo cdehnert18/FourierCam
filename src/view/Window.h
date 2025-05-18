@@ -12,10 +12,12 @@
 class Window : public Gtk::Window {
 public:
     Window();
+    
+    void start_video_stream();
 
     void set_video_sources(const std::vector<Glib::ustring>& sources);
-    void setBoxSizes(std::tuple<int, int> dimensions);
-
+    void set_initial_video_size(int width, int height);
+    
     Glib::ustring getSelectedVideoSource();
 
 private:

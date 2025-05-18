@@ -20,10 +20,14 @@ void Window::set_video_sources(const std::vector<Glib::ustring>& sources) {
     m_settingsBox.set_video_sources(sources);
 }
 
-void Window::setBoxSizes(std::tuple<int, int> dimensions) {
-    m_videoBox.setBoxSizes(dimensions);
+void Window::set_initial_video_size(int width, int height) {
+    m_videoBox.set_initial_video_size(width, height);
 }
 
 Glib::ustring Window::getSelectedVideoSource() {
     return m_settingsBox.getSelectedVideoSource();
+}
+
+void Window::start_video_stream() {
+    m_videoBox.start_video_stream("/dev/video0");
 }
