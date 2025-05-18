@@ -4,6 +4,7 @@
 #include "gtkmm/glarea.h"
 #include "gtkmm/paned.h"
 #include "model/VideoHandler.h"
+#include "view/shader/ShaderManager.h"
 #include <chrono>
 #include <mutex>
 #include <thread>
@@ -26,6 +27,7 @@ class VideoBox : public Gtk::Paned {
         Gtk::GLArea m_fourierOutput;
 
         VideoHandler m_handler;
+        ShaderManager m_shaderManager;
         std::chrono::steady_clock::time_point m_start_time;
 
         std::atomic<bool> m_running;

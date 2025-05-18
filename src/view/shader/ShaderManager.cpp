@@ -4,18 +4,17 @@
 #include <sstream>
 #include <iostream>
 #include <string>
-#include <epoxy/gl.h>  // or <GL/gl.h> depending on your setup
+#include <epoxy/gl.h>
 #include <unistd.h>
 
-std::string getShaderPath(const std::string& filename) {
-    return std::filesystem::path(getExecutableDir()) / "view/shader/shaderfiles/" / filename;
-}
+ShaderManager::ShaderManager(std::string baseShaderPath) : m_baseShaderPath(std::move(baseShaderPath)) {}
 
 // Reads the entire contents of a text file and returns it as a string
-std::string read_file(const std::string& filename) {
-    std::ifstream file(filename);
+std::string ShaderManager::read_file(const std::string& filename) {
+    auto filepath = getShaderPath(filename);
+    std::ifstream file(filepath);
     if (!file.is_open()) {
-        std::cerr << "Error: Cannot open shader file: " << filename << std::endl;
+        std::cerr << "Error: Cannot open shader file: " << filepath << std::endl;
         return {};
     }
 
@@ -25,7 +24,7 @@ std::string read_file(const std::string& filename) {
 }
 
 // Compiles a shader from source code
-GLuint compile_shader(GLenum type, const std::string& source) {
+GLuint ShaderManager::compile_shader(GLenum type, const std::string& source) {
     GLuint shader = glCreateShader(type);
     const char* src_cstr = source.c_str();
     glShaderSource(shader, 1, &src_cstr, nullptr);
@@ -48,7 +47,9 @@ GLuint compile_shader(GLenum type, const std::string& source) {
 }
 
 // Creates a shader program from vertex and fragment shader source strings
-GLuint create_shader_program(const std::string& vertex_source, const std::string& fragment_source) {
+GLuint ShaderManager::create_shader_program(const std::string& vertex_file, const std::string& fragment_file) {
+    auto vertex_source = read_file(vertex_file);
+    auto fragment_source = read_file(fragment_file);
     GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_source);
     if (vertex_shader == 0) return 0;
 
@@ -83,7 +84,15 @@ GLuint create_shader_program(const std::string& vertex_source, const std::string
     return program;
 }
 
-std::string getExecutableDir() {
+std::string ShaderManager::getShaderPath(const std::string& filename) {
+    if (!m_baseShaderPath.empty()) {
+        return (std::filesystem::path(m_baseShaderPath) / filename).string();
+    }
+    // Default path relative to executable
+    return (std::filesystem::path(getExecutableDir()) / "view/shader/shaderfiles" / filename).string();
+}
+
+std::string ShaderManager::getExecutableDir() {
     char result[256];
     ssize_t count = readlink("/proc/self/exe", result, 256);
     std::string path = std::string(result, (count > 0) ? count : 0);

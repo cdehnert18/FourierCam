@@ -50,13 +50,9 @@ void VideoBox::on_glarea_realize_webcam() {
     if (m_webcamOutput.has_error()) {
         std::cerr << "GLArea failed to initialize OpenGL context" << std::endl;
         return;
-    }
+    }    
 
-    std::string vertex_shader_src = read_file(getShaderPath("vertex.glsl"));
-    std::string fragment_shader_src = read_file(getShaderPath("fragment.glsl"));
-    
-
-    m_shader_program = create_shader_program(vertex_shader_src, fragment_shader_src);
+    m_shader_program = m_shaderManager.create_shader_program("vertex.glsl", "fragment.glsl");
 
     float vertices[] = {
     // Positions   // TexCoords
