@@ -40,7 +40,9 @@ class VideoBox : public Gtk::Paned {
         int m_width = 400;
         int m_height = 300;
 
-        GLuint m_shader_program = 0;
+        GLuint m_webcam_shader_program = 0;
+        GLuint m_fourier_shader_program = 0;
+
         GLuint m_vao = 0;
         GLuint m_vbo = 0;
         GLuint m_texture_id = 0;

@@ -61,6 +61,7 @@ void VideoBox::start_video_stream(const Glib::ustring& device_path, Window& pare
                 g_idle_add([](void* data) -> gboolean {
                     auto* self = static_cast<VideoBox*>(data);
                     self->m_webcamOutput.queue_draw();
+                    self->m_fourierOutput.queue_draw();
                     return G_SOURCE_REMOVE;
                 }, this);
             }
@@ -92,7 +93,7 @@ void VideoBox::on_glarea_realize_webcam() {
         return;
     }    
 
-    m_shader_program = m_shaderManager.create_shader_program("vertex.glsl", "fragment.glsl");
+    m_webcam_shader_program = m_shaderManager.create_shader_program("vertex.glsl", "fragment.glsl");
 
     float vertices[] = {
     // Positions   // TexCoords
@@ -110,11 +111,11 @@ void VideoBox::on_glarea_realize_webcam() {
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    GLint posAttrib = glGetAttribLocation(m_shader_program, "position");
+    GLint posAttrib = glGetAttribLocation(m_webcam_shader_program, "position");
     glEnableVertexAttribArray(posAttrib);
     glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 
-    GLint texAttrib = glGetAttribLocation(m_shader_program, "texcoord");
+    GLint texAttrib = glGetAttribLocation(m_webcam_shader_program, "texcoord");
     glEnableVertexAttribArray(texAttrib);
     glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
@@ -122,14 +123,41 @@ void VideoBox::on_glarea_realize_webcam() {
 }
 
 void VideoBox::on_glarea_realize_fourier() {
+    
     m_fourierOutput.make_current();
 
     if (m_fourierOutput.has_error()) {
         std::cerr << "GLArea failed to initialize OpenGL context" << std::endl;
         return;
-    }
+    }    
 
-    // You can initialize shaders or buffers here if needed
+    m_fourier_shader_program = m_shaderManager.create_shader_program("vertex.glsl", "dftFragment.glsl");
+
+    float vertices[] = {
+    // Positions   // TexCoords
+    -1.f, -1.f,    0.f, 1.f,
+     1.f, -1.f,    1.f, 1.f,
+     1.f,  1.f,    1.f, 0.f,
+    -1.f,  1.f,    0.f, 0.f
+    };
+
+    glGenVertexArrays(1, &m_vao);
+    glGenBuffers(1, &m_vbo);
+
+    glBindVertexArray(m_vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    GLint posAttrib = glGetAttribLocation(m_fourier_shader_program, "position");
+    glEnableVertexAttribArray(posAttrib);
+    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+
+    GLint texAttrib = glGetAttribLocation(m_fourier_shader_program, "texcoord");
+    glEnableVertexAttribArray(texAttrib);
+    glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    glBindVertexArray(0);
 }
 
 void VideoBox::on_glarea_unrealize_webcam() {
@@ -152,14 +180,35 @@ void VideoBox::on_glarea_unrealize_webcam() {
         m_vao = 0;
     }
 
-    if (m_shader_program != 0) {
-        glDeleteProgram(m_shader_program);
-        m_shader_program = 0;
+    if (m_webcam_shader_program != 0) {
+        glDeleteProgram(m_webcam_shader_program);
+        m_webcam_shader_program = 0;
     }
 }
 
 void VideoBox::on_glarea_unrealize_fourier() {
-    // TODO
+    if (!m_fourierOutput.get_realized()) return;
+    m_fourierOutput.make_current();
+    
+    if (m_texture_id != 0) {
+        glDeleteTextures(1, &m_texture_id);
+        m_texture_id = 0;
+    }
+
+    if (m_vbo != 0) {
+        glDeleteBuffers(1, &m_vbo);
+        m_vbo = 0;
+    }
+
+    if (m_vao != 0) {
+        glDeleteVertexArrays(1, &m_vao);
+        m_vao = 0;
+    }
+
+    if (m_fourier_shader_program != 0) {
+        glDeleteProgram(m_fourier_shader_program);
+        m_fourier_shader_program = 0;
+    }
 }
 
 bool VideoBox::on_glarea_render_webcam(const Glib::RefPtr<Gdk::GLContext>&) {
@@ -186,8 +235,8 @@ bool VideoBox::on_glarea_render_webcam(const Glib::RefPtr<Gdk::GLContext>&) {
     
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, m_frame_buffer.data());
 
-    glUseProgram(m_shader_program);
-    GLint timeLoc = glGetUniformLocation(m_shader_program, "time");
+    glUseProgram(m_webcam_shader_program);
+    GLint timeLoc = glGetUniformLocation(m_webcam_shader_program, "time");
     if (timeLoc != -1) {
         glUniform1f(timeLoc, elapsed_seconds);
     }
@@ -195,7 +244,7 @@ bool VideoBox::on_glarea_render_webcam(const Glib::RefPtr<Gdk::GLContext>&) {
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_texture_id);
-    GLint texUniform = glGetUniformLocation(m_shader_program, "tex");
+    GLint texUniform = glGetUniformLocation(m_webcam_shader_program, "tex");
     glUniform1i(texUniform, 0);
 
     glBindVertexArray(m_vao);
@@ -208,9 +257,51 @@ bool VideoBox::on_glarea_render_webcam(const Glib::RefPtr<Gdk::GLContext>&) {
 }
 
 bool VideoBox::on_glarea_render_fourier(const Glib::RefPtr<Gdk::GLContext>&) {
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    std::lock_guard<std::mutex> lock(m_frame_mutex);
+
+    auto now = std::chrono::steady_clock::now();
+    float elapsed_seconds = std::chrono::duration<float>(now - m_start_time).count();
+
+
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // If rendering failed, return false
+    if (m_frame_buffer.empty())
+        return true;
+
+    if (m_texture_id == 0) {
+        glGenTextures(1, &m_texture_id);
+        glBindTexture(GL_TEXTURE_2D, m_texture_id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, m_texture_id);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, m_frame_buffer.data());
+
+    glUseProgram(m_fourier_shader_program);
+    GLint timeLoc = glGetUniformLocation(m_fourier_shader_program, "time");
+    if (timeLoc != -1) {
+        glUniform1f(timeLoc, elapsed_seconds);
+    }
+
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_texture_id);
+    GLint texUniform = glGetUniformLocation(m_fourier_shader_program, "tex");
+    glUniform1i(texUniform, 0);
+
+    GLint widthLoc = glGetUniformLocation(m_fourier_shader_program, "width");
+    GLint heightLoc = glGetUniformLocation(m_fourier_shader_program, "height");
+    if (widthLoc != -1) glUniform1i(widthLoc, m_width);
+    if (heightLoc != -1) glUniform1i(heightLoc, m_height);
+
+    glBindVertexArray(m_vao);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindVertexArray(0);
+
+    glUseProgram(0);
+
     return true;
 }
