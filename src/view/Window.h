@@ -15,7 +15,7 @@ public:
     
     void start_video_stream();
 
-    void set_video_sources(const std::vector<Glib::ustring>& sources);
+    void set_available_video_sources(const std::vector<Glib::ustring>& sources);
     void set_initial_video_size(int width, int height);
     
     Glib::ustring getSelectedVideoSource();

@@ -18,7 +18,7 @@ Window::Window() {
     set_child(m_paned);
 }
 
-void Window::set_video_sources(const std::vector<Glib::ustring>& sources) {
+void Window::set_available_video_sources(const std::vector<Glib::ustring>& sources) {
     m_settingsBox.set_video_sources(sources);
 }
 

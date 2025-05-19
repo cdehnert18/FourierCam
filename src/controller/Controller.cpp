@@ -13,9 +13,11 @@ int Controller::run(int argc, char* argv[]) {
 
 void Controller::on_app_activate() {
     m_window = std::make_unique<Window>();
-    VideoSource videoHandler;
-    m_window->set_video_sources(videoHandler.get_available_video_sources());
+    
+    VideoSource videoSource;
+    m_window->set_available_video_sources(videoSource.get_available_video_sources());
+    
     app->add_window(*m_window);
-    m_window->set_visible(true);
     m_window->start_video_stream();
+    m_window->set_visible(true);
 }
