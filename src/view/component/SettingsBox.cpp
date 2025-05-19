@@ -41,7 +41,7 @@ SettingsBox::SettingsBox() : Gtk::Box(Gtk::Orientation::VERTICAL) {
 
     append(m_screenshotButton);
 
-
+    
     // ClickHandler
     m_screenshotButton.signal_clicked().connect([this]() {
         // TODO

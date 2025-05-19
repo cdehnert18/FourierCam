@@ -5,6 +5,7 @@
 #include <iostream>
 #include <mutex>
 #include "../shader/ShaderManager.h"
+#include "../Window.h"
 
 VideoBox::VideoBox() : Gtk::Paned(Gtk::Orientation::VERTICAL) {
 
@@ -37,10 +38,12 @@ VideoBox::VideoBox() : Gtk::Paned(Gtk::Orientation::VERTICAL) {
 }
 
 void VideoBox::set_initial_video_size(int width, int height) {
+    set_size_request(width, 2 * height);
+    set_position(height);
     m_initial_frame_height = height;
     m_initial_frame_width = width;
-    m_webcamOutput.set_size_request(width / 2, height / 2);
-    m_fourierOutput.set_size_request(width / 2, height/ 2);
+    m_webcamOutput.set_size_request(width, height);
+    m_fourierOutput.set_size_request(width, height);
 }
 
 void VideoBox::on_glarea_realize_webcam() {
@@ -179,17 +182,20 @@ bool VideoBox::on_glarea_render_fourier(const Glib::RefPtr<Gdk::GLContext>&) {
     return true;
 }
 
-void VideoBox::start_video_stream(const Glib::ustring& device_path) {
-    m_running = true;
+void VideoBox::start_video_stream(const Glib::ustring& device_path, Window& parent) {
     
-    m_video_thread = std::thread([this, device_path]() {
-        int width = m_webcamOutput.get_width(); 
-        int height = m_webcamOutput.get_height();
-        if(m_handler.openDevice(device_path) < 0) {
+    if(m_handler.openDevice(device_path) < 0) {
             return;
-        }
+    }
+    int width = 400;
+    int height = 300;
+    m_handler.get_video_resolution(width, height);
+    set_initial_video_size(width, height);
+    parent.set_initial_video_size(width, height);
+    m_running = true;
+    m_video_thread = std::thread([this, device_path]() {
         while (m_running) {
-            auto frame = m_handler.get_rgb_frame(device_path, width, height);
+            auto frame = m_handler.get_rgb_frame(device_path);
             if (!frame.empty()) {
                 {
                     std::lock_guard<std::mutex> lock(m_frame_mutex);

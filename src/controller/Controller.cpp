@@ -13,10 +13,8 @@ int Controller::run(int argc, char* argv[]) {
 
 void Controller::on_app_activate() {
     m_window = std::make_unique<Window>();
-    VideoHandler videoHandler;
-    m_window->set_video_sources(videoHandler.get_video_sources());
-    auto dimensions = videoHandler.get_video_resolution(m_window->getSelectedVideoSource());
-    m_window->set_initial_video_size(std::get<0>(dimensions), std::get<1>(dimensions));
+    VideoSource videoHandler;
+    m_window->set_video_sources(videoHandler.get_available_video_sources());
     app->add_window(*m_window);
     m_window->set_visible(true);
     m_window->start_video_stream();

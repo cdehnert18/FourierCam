@@ -9,31 +9,31 @@ struct buffer {
     size_t length;
 };
 
-class VideoHandler {
-public:
-    VideoHandler();
-    ~VideoHandler() = default;
+class VideoSource {
+    public:
+        VideoSource();
+        ~VideoSource();
 
-    std::vector<Glib::ustring> get_video_sources() const;
-    std::tuple<int, int> get_video_resolution(const Glib::ustring& device_path) const;
-    std::vector<unsigned char> get_rgb_frame(const Glib::ustring& device_path, int& width, int& height);
+        std::vector<Glib::ustring> get_available_video_sources() const;
+        std::vector<unsigned char> get_rgb_frame(const Glib::ustring& device_path);
 
-    int openDevice(const Glib::ustring& device_path);
-    void closeDevice();
-private:
-    std::vector<Glib::ustring> m_video_sources;
+        int openDevice(const Glib::ustring& device_path);
+        void closeDevice();
+        void get_video_resolution(int& width, int& height);
+    
+    private:
+        std::vector<Glib::ustring> m_available_video_sources;
 
-    int fd = -1;
-    struct buffer* buffers = NULL;
-    unsigned int n_buffers = 0;
+        int fd = -1;
+        struct buffer* buffers = NULL;
+        unsigned int n_buffers = 0;
 
-    int m_width;
-    int m_height;
+        int m_width;
+        int m_height;
 
-    void enumerate_video_devices();
-    int xioctl(int fd, int request, void* arg);
-    void errno_exit(const char* s);
-    bool is_video_capture_device(const Glib::ustring& device_path) const;
+        bool is_video_capture_device(const Glib::ustring& device_path) const;
+        int xioctl(int fd, int request, void* arg);
+        void errno_exit(const char* s);
 };
 
 #endif // VIDEO_HANDLER_H

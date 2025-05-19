@@ -15,59 +15,36 @@
 
 #define CLEAR(x) memset (&(x), 0, sizeof (x))
 
-VideoHandler::VideoHandler() {
-    enumerate_video_devices();
-}
-
-std::vector<Glib::ustring> VideoHandler::get_video_sources() const {
-    return m_video_sources;
-}
-
-std::tuple<int, int> VideoHandler::get_video_resolution(const Glib::ustring& device_path) const {
-    int fd = open(device_path.c_str(), O_RDONLY);
-    if (fd == -1) {
-        std::cerr << "Failed to open device: " << device_path << std::endl;
-        return std::make_tuple(0, 0);
-    }
-
-    v4l2_format fmt;
-    memset(&fmt, 0, sizeof(fmt));
-    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-    if (ioctl(fd, VIDIOC_G_FMT, &fmt) == -1) {
-        std::cerr << "Failed to get format from device: " << device_path << std::endl;
-        close(fd);
-        return std::make_tuple(0, 0);
-    }
-
-    close(fd);
-    std::cout << static_cast<int>(fmt.fmt.pix.width) << " " << static_cast<int>(fmt.fmt.pix.height) << std::endl;
-    return std::make_tuple(static_cast<int>(fmt.fmt.pix.width), static_cast<int>(fmt.fmt.pix.height));
-}
-
-
-void VideoHandler::enumerate_video_devices() {
-    const char* dev_dir = "/dev";
-    DIR* dir = opendir(dev_dir);
+VideoSource::VideoSource() {
+    
+    // get all available video sources
+    DIR* dir = opendir("/dev");
     if (!dir) {
         std::cerr << "Failed to open /dev directory" << std::endl;
-        return;
-    }
+    } else {
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            if (strncmp(entry->d_name, "video", 5) == 0) {
+                std::string device_path = std::string("/dev/") + entry->d_name;
 
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != nullptr) {
-        if (strncmp(entry->d_name, "video", 5) == 0) {
-            std::string device_path = std::string(dev_dir) + "/" + entry->d_name;
-
-            if (is_video_capture_device(device_path)) {
-                m_video_sources.push_back(device_path);
+                if (is_video_capture_device(device_path)) {
+                    m_available_video_sources.push_back(device_path);
+                }
             }
         }
+        closedir(dir);
     }
-    closedir(dir);
 }
 
-bool VideoHandler::is_video_capture_device(const Glib::ustring& device_path) const {
+VideoSource::~VideoSource() {
+    closeDevice();
+}
+
+std::vector<Glib::ustring> VideoSource::get_available_video_sources() const {
+    return m_available_video_sources;
+}
+
+bool VideoSource::is_video_capture_device(const Glib::ustring& device_path) const {
     int fd = open(device_path.c_str(), O_RDONLY | O_NONBLOCK);
     if (fd == -1) {
         return false;
@@ -87,7 +64,7 @@ bool VideoHandler::is_video_capture_device(const Glib::ustring& device_path) con
     return result;
 }
 
-int VideoHandler::xioctl(int fd, int request, void* arg) {
+int VideoSource::xioctl(int fd, int request, void* arg) {
     int r;
 
     do r = ioctl (fd, request, arg);
@@ -96,14 +73,14 @@ int VideoHandler::xioctl(int fd, int request, void* arg) {
     return r;
 }
 
-void VideoHandler::errno_exit(const char* s) {
+void VideoSource::errno_exit(const char* s) {
     fprintf (stderr, "%s error %d, %s\n",
                 s, errno, strerror (errno));
 
     exit (EXIT_FAILURE);
 }
 
-int VideoHandler::openDevice(const Glib::ustring& device_path) {
+int VideoSource::openDevice(const Glib::ustring& device_path) {
     
     struct stat st;
 
@@ -169,7 +146,9 @@ int VideoHandler::openDevice(const Glib::ustring& device_path) {
 
     fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     fmt.fmt.pix.width       = 640; 
-    fmt.fmt.pix.height      = 480;
+    fmt.fmt.pix.height      = 360;
+    //fmt.fmt.pix.width       = 1280; 
+    //fmt.fmt.pix.height      = 720;
     fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
     fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
@@ -266,7 +245,7 @@ int VideoHandler::openDevice(const Glib::ustring& device_path) {
     return 1;
 }
 
-void VideoHandler::closeDevice() {
+void VideoSource::closeDevice() {
     if (fd == -1)
         return;
 
@@ -290,7 +269,12 @@ void VideoHandler::closeDevice() {
     fd = -1;
 }
 
-std::vector<unsigned char> VideoHandler::get_rgb_frame(const Glib::ustring& device_path, int& width, int& height) {
+void VideoSource::get_video_resolution(int& width, int& height) {
+    width = m_width;
+    height = m_height;
+}
+
+std::vector<unsigned char> VideoSource::get_rgb_frame(const Glib::ustring& device_path) {
     if (fd == -1 || buffers->start == nullptr) {
         std::cerr << "Device not opened or buffer not initialized" << std::endl;
         return {};
@@ -351,9 +335,6 @@ std::vector<unsigned char> VideoHandler::get_rgb_frame(const Glib::ustring& devi
         rgb[j + 4] = g1;
         rgb[j + 5] = b1;
     }
-
-    width = m_width;
-    height = m_height;
     
     return rgb;
 }

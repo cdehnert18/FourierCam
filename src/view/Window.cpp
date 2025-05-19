@@ -13,6 +13,8 @@ Window::Window() {
     m_paned.set_start_child(m_settingsBox);
     m_paned.set_end_child(m_videoBox);
 
+    m_settingsBox.set_size_request(300, -1);
+
     set_child(m_paned);
 }
 
@@ -21,7 +23,7 @@ void Window::set_video_sources(const std::vector<Glib::ustring>& sources) {
 }
 
 void Window::set_initial_video_size(int width, int height) {
-    m_videoBox.set_initial_video_size(width, height);
+    set_default_size(width + 300, height);
 }
 
 Glib::ustring Window::getSelectedVideoSource() {
@@ -29,5 +31,5 @@ Glib::ustring Window::getSelectedVideoSource() {
 }
 
 void Window::start_video_stream() {
-    m_videoBox.start_video_stream("/dev/video0");
+    m_videoBox.start_video_stream(m_settingsBox.getSelectedVideoSource(), *this);
 }
