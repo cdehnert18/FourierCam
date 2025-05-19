@@ -37,13 +37,50 @@ VideoBox::VideoBox() : Gtk::Paned(Gtk::Orientation::VERTICAL) {
     set_end_child(m_fourierOutput);
 }
 
-void VideoBox::set_initial_video_size(int width, int height) {
-    set_size_request(width, 2 * height);
-    set_position(height);
-    m_initial_frame_height = height;
-    m_initial_frame_width = width;
-    m_webcamOutput.set_size_request(width, height);
-    m_fourierOutput.set_size_request(width, height);
+VideoBox::~VideoBox() {
+    stop_video_stream();
+}
+
+void VideoBox::start_video_stream(const Glib::ustring& device_path, Window& parent) {
+    
+    if(m_videoSource.openDevice(device_path) < 0) {
+            return;
+    }
+    m_videoSource.get_video_resolution(m_width, m_height);
+    set_widget_size();
+    parent.set_initial_video_size(m_width, m_height);
+    m_running = true;
+    m_video_thread = std::thread([this, device_path]() {
+        while (m_running) {
+            auto frame = m_videoSource.get_rgb_frame(device_path);
+            if (!frame.empty()) {
+                {
+                    std::lock_guard<std::mutex> lock(m_frame_mutex);
+                    m_frame_buffer = std::move(frame);
+                }
+                g_idle_add([](void* data) -> gboolean {
+                    auto* self = static_cast<VideoBox*>(data);
+                    self->m_webcamOutput.queue_draw();
+                    return G_SOURCE_REMOVE;
+                }, this);
+            }
+        }
+        m_videoSource.closeDevice();
+    });
+}
+
+void VideoBox::stop_video_stream() {
+    m_running = false;
+    if (m_video_thread.joinable()) {
+        m_video_thread.join();
+    }
+}
+
+void VideoBox::set_widget_size() {
+    set_size_request(m_width, 2 * m_height);
+    set_position(m_height);
+    m_webcamOutput.set_size_request(m_width, m_height);
+    m_fourierOutput.set_size_request(m_width, m_height);
 }
 
 void VideoBox::on_glarea_realize_webcam() {
@@ -82,10 +119,6 @@ void VideoBox::on_glarea_realize_webcam() {
     glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
     glBindVertexArray(0);
-}
-
-VideoBox::~VideoBox() {
-    stop_video_stream();
 }
 
 void VideoBox::on_glarea_realize_fourier() {
@@ -151,7 +184,7 @@ bool VideoBox::on_glarea_render_webcam(const Glib::RefPtr<Gdk::GLContext>&) {
 
     glBindTexture(GL_TEXTURE_2D, m_texture_id);
     
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_initial_frame_width, m_initial_frame_height, 0, GL_RGB, GL_UNSIGNED_BYTE, m_frame_buffer.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, m_frame_buffer.data());
 
     glUseProgram(m_shader_program);
     GLint timeLoc = glGetUniformLocation(m_shader_program, "time");
@@ -180,41 +213,4 @@ bool VideoBox::on_glarea_render_fourier(const Glib::RefPtr<Gdk::GLContext>&) {
 
     // If rendering failed, return false
     return true;
-}
-
-void VideoBox::start_video_stream(const Glib::ustring& device_path, Window& parent) {
-    
-    if(m_handler.openDevice(device_path) < 0) {
-            return;
-    }
-    int width = 400;
-    int height = 300;
-    m_handler.get_video_resolution(width, height);
-    set_initial_video_size(width, height);
-    parent.set_initial_video_size(width, height);
-    m_running = true;
-    m_video_thread = std::thread([this, device_path]() {
-        while (m_running) {
-            auto frame = m_handler.get_rgb_frame(device_path);
-            if (!frame.empty()) {
-                {
-                    std::lock_guard<std::mutex> lock(m_frame_mutex);
-                    m_frame_buffer = std::move(frame);
-                }
-                g_idle_add([](void* data) -> gboolean {
-                    auto* self = static_cast<VideoBox*>(data);
-                    self->m_webcamOutput.queue_draw();
-                    return G_SOURCE_REMOVE;
-                }, this);
-            }
-        }
-        m_handler.closeDevice();
-    });
-}
-
-void VideoBox::stop_video_stream() {
-    m_running = false;
-    if (m_video_thread.joinable()) {
-        m_video_thread.join();
-    }
 }
