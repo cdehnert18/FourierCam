@@ -53,7 +53,6 @@ void main() {
     float magnitudeG = log(1.0 + length(sumG));
     float magnitudeB = log(1.0 + length(sumB));
 
-    // neu
     float valueR = (magnitudeR / log(256.0)) * 255.0;
     float valueG = (magnitudeG / log(256.0)) * 255.0;
     float valueB = (magnitudeB / log(256.0)) * 255.0;
@@ -62,7 +61,5 @@ void main() {
     valueG = clamp(valueG, 0.0, 255.0);
     valueB = clamp(valueB, 0.0, 255.0);
 
-
-    // FragColor = vec4(valueR, valueG, valueB, 1.0);
     FragColor = vec4(valueR, valueG, valueB, 1.0);
 }
