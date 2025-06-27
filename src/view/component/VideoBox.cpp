@@ -10,7 +10,7 @@
 VideoBox::VideoBox() : Gtk::Paned(Gtk::Orientation::VERTICAL) {
 
     // Configure GLArea
-    m_webcamOutput.set_required_version(3, 2);
+    m_webcamOutput.set_required_version(4, 6);
     m_webcamOutput.set_auto_render(true);
     m_webcamOutput.set_hexpand(true);
     m_webcamOutput.set_vexpand(true);
@@ -21,7 +21,7 @@ VideoBox::VideoBox() : Gtk::Paned(Gtk::Orientation::VERTICAL) {
     m_webcamOutput.signal_render().connect(sigc::mem_fun(*this, &VideoBox::on_glarea_render_webcam), false);
 
     // Configure GLArea
-    m_fourierOutput.set_required_version(3, 2); // or lower if needed
+    m_fourierOutput.set_required_version(4, 6);
     m_fourierOutput.set_auto_render(true);
     m_fourierOutput.set_hexpand(true);
     m_fourierOutput.set_vexpand(true);
