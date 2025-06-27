@@ -3,6 +3,7 @@
 
 #include "glibmm/ustring.h"
 #include <vector>
+#include <tuple>
 
 struct buffer {
     void* start;
